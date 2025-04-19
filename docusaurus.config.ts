@@ -121,7 +121,7 @@ const config: Config = {
           items: [
             {
               label: 'Blog',
-              to: '/blog',
+              href: 'https://weihongyu.com/',
             },
             {
               label: 'GitHub',
