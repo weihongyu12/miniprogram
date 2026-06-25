@@ -20,8 +20,8 @@ function HomepageHeader() {
         <div className={styles.buttons}>
           <Link
             className="button button--secondary button--lg"
-            to="/docs/intro">
-            Docusaurus Tutorial - 5min ⏱️
+            to="/docs/getting-started">
+            开始阅读
           </Link>
         </div>
       </div>
@@ -30,11 +30,10 @@ function HomepageHeader() {
 }
 
 export default function Home(): ReactNode {
-  const {siteConfig} = useDocusaurusContext();
   return (
     <Layout
-      title={`Hello from ${siteConfig.title}`}
-      description="Description will go into a meta tag in <head />">
+      title="老魏的工作笔记 - 微信小程序开发实践与最佳实践"
+      description="微信小程序开发实践文档，涵盖架构设计、业务功能、工程化、代码规范、状态管理、CI/CD 与功能设计">
       <HomepageHeader />
       <main>
         <HomepageFeatures />

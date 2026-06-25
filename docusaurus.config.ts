@@ -2,11 +2,9 @@ import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
-// This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
-
 const config: Config = {
-  title: 'My Site',
-  tagline: 'Dinosaurs are cool',
+  title: '老魏的工作笔记（小程序版）',
+  tagline: '微信小程序开发实践与工作笔记',
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
@@ -18,17 +16,16 @@ const config: Config = {
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
   organizationName: 'weihongyu12', // Usually your GitHub org/user name.
-  projectName: 'weihongyu12.github.io', // Usually your repo name.
+  projectName: 'miniprogram', // Usually your repo name.
 
   onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'warn',
 
   // Even if you don't use internationalization, you can use this field to set
   // useful metadata like html lang. For example, if your site is Chinese, you
   // may want to replace "en" with "zh-Hans".
   i18n: {
-    defaultLocale: 'zh-CN',
-    locales: ['zh-CN'],
+    defaultLocale: 'zh-Hans',
+    locales: ['zh-Hans'],
   },
 
   presets: [
@@ -40,22 +37,7 @@ const config: Config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
-        },
-        blog: {
-          showReadingTime: true,
-          feedOptions: {
-            type: ['rss', 'atom'],
-            xslt: true,
-          },
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
-          // Useful options to enforce blogging best practices
-          onInlineTags: 'warn',
-          onInlineAuthors: 'warn',
-          onUntruncatedBlogPosts: 'warn',
+            'https://github.com/weihongyu12/miniprogram/edit/main/',
         },
         theme: {
           customCss: './src/css/custom.css',
@@ -68,7 +50,7 @@ const config: Config = {
     // Replace with your project's social card
     image: 'img/docusaurus-social-card.jpg',
     navbar: {
-      title: 'My Site',
+      title: '老魏的工作笔记（小程序版）',
       logo: {
         alt: 'My Site Logo',
         src: 'img/logo.svg',
@@ -76,12 +58,52 @@ const config: Config = {
       items: [
         {
           type: 'docSidebar',
-          sidebarId: 'tutorialSidebar',
+          sidebarId: 'gettingStartedSidebar',
           position: 'left',
-          label: 'Tutorial',
+          label: '指南',
         },
         {
-          href: 'https://github.com/facebook/docusaurus',
+          type: 'docSidebar',
+          sidebarId: 'specificationSidebar',
+          position: 'left',
+          label: '规范',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'featuresSidebar',
+          position: 'left',
+          label: '业务功能',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'pipelineSidebar',
+          position: 'left',
+          label: '工程化',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'cookbookSidebar',
+          position: 'left',
+          label: 'Cookbook',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'referenceSidebar',
+          position: 'left',
+          label: '参考',
+        },
+        {
+          to: '/docs/support',
+          position: 'left',
+          label: '支持',
+        },
+        {
+          href: 'https://weihongyu12.github.io/web/',
+          label: 'Web版',
+          position: 'right',
+        },
+        {
+          href: 'https://github.com/weihongyu12/miniprogram',
           label: 'GitHub',
           position: 'right',
         },
@@ -94,25 +116,33 @@ const config: Config = {
           title: 'Docs',
           items: [
             {
-              label: 'Tutorial',
-              to: '/docs/intro',
+              label: '指南',
+              to: '/docs/getting-started/',
+            },
+            {
+              label: '规范',
+              to: '/docs/specification/directory/',
             },
           ],
         },
         {
-          title: 'Community',
+          title: 'Reference',
           items: [
             {
-              label: 'Stack Overflow',
-              href: 'https://stackoverflow.com/questions/tagged/docusaurus',
+              label: '业务功能',
+              to: '/docs/features/',
             },
             {
-              label: 'Discord',
-              href: 'https://discordapp.com/invite/docusaurus',
+              label: '工程化',
+              to: '/docs/pipeline/',
             },
             {
-              label: 'X',
-              href: 'https://x.com/docusaurus',
+              label: 'Cookbook',
+              to: '/docs/cookbook/typescript/',
+            },
+            {
+              label: '配置参考',
+              to: '/docs/reference/configuration/',
             },
           ],
         },
@@ -125,18 +155,49 @@ const config: Config = {
             },
             {
               label: 'GitHub',
-              href: 'https://github.com/facebook/docusaurus',
+              href: 'https://github.com/weihongyu12/miniprogram',
+            },
+            {
+              label: 'Donation 捐赠',
+              to: '/docs/support',
             },
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} Wei Hongyu. Built with Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,
       darkTheme: prismThemes.dracula,
+      additionalLanguages: [
+        'json5',
+        'scss',
+        'http',
+        'docker',
+        'nginx',
+        'java',
+        'php',
+        'csharp',
+      ],
     },
   } satisfies Preset.ThemeConfig,
+
+  plugins: [
+    '@docusaurus/plugin-pwa',
+  ],
+
+  themes: ['@docusaurus/theme-mermaid'],
+  markdown: {
+    hooks: {
+      onBrokenMarkdownLinks: 'warn',
+    },
+    mermaid: true,
+  },
+
+  future: {
+    faster: true,
+    v4: true,
+  },
 };
 
 export default config;

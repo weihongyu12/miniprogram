@@ -1,7 +1,5 @@
 ---
-lang: zh-cmn-Hans-CN
-title: 目录规范
-description: 项目目录规范
+description: 微信小程序项目目录结构规范，涵盖源码、配置、npm 产物等目录的组织约定
 ---
 
 # 目录规范
@@ -61,6 +59,7 @@ project/
     ├── miniprogram_npm/
     ├── packages/
     ├── pages/
+    ├── services/
     ├── styles/
     │   └── utilities.scss
     ├── utils/
@@ -75,6 +74,7 @@ project/
 - `miniprogram_npm/`：小程序构建的npm，参见 [npm 支持](https://developers.weixin.qq.com/miniprogram/dev/devtools/npm.html)
 - `packages/`：分包代码
 - `pages/`：主包页面代码
+- `services/`：服务层（业务流程编排 + 平台 API 收口），参见 [分层架构](../../getting-started/README.md#分层架构)
 - `styles/`：全局样式文件，包括一个工具样式 `utilities.scss`
 - `utils/`：工具JS函数
 - `app.js`：小程序 App 实例，参见 [注册小程序](https://developers.weixin.qq.com/miniprogram/dev/framework/app-service/app.html)

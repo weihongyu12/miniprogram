@@ -1,7 +1,6 @@
 ---
-lang: zh-cmn-Hans-CN
-title: 参考配置
-description: 参考配置手册
+sidebar_position: 100
+description: 微信小程序参考配置，包含 project.config.json、sitemap.json 等关键配置文件示例
 ---
 
 # 参考配置
