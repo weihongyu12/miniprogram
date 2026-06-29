@@ -4,7 +4,7 @@ description: 微信小程序 CI/CD 实践，基于 miniprogram-ci 的自动化�
 
 # CI/CD
 
-本项目使用 **GitLab CI/CD** 或 **GitHub Actions** 自动化构建、测试、质量检查和上传流程。本文档以 GitLab CI 为例，GitHub Actions 配置类似。
+本项目使用 **GitLab CI/CD** 自动化构建、测试、质量检查和上传流程。
 
 ## Pipeline 总览
 
@@ -40,7 +40,7 @@ graph LR
 # .gitlab-ci.yml
 install:
   stage: install
-  image: node:18
+  image: node:lts
   cache:
     key: ${CI_COMMIT_REF_SLUG}
     paths:
@@ -63,7 +63,7 @@ install:
 ```yaml
 lint:
   stage: lint
-  image: node:18
+  image: node:lts
   script:
     - npm run lint
     - npm run lint:style
@@ -85,7 +85,7 @@ Lint 规范与提交前的 husky + lint-staged 钩子保持一致，本地提交
 ```yaml
 test:
   stage: test
-  image: node:18
+  image: node:lts
   script:
     - npm run test
   coverage: '/Lines\s*:\s*(\d+\.\d+)%/'
@@ -107,7 +107,7 @@ test:
 ```yaml
 build:
   stage: build
-  image: node:18
+  image: node:lts
   script:
     # 构建小程序 npm
     - npm run build:npm
@@ -123,81 +123,88 @@ build:
 
 ### 5. upload — 上传
 
-使用 [miniprogram-ci](https://github.com/wechat-miniprogram/miniprogram-ci) 上传代码到微信服务器。
+使用 [miniprogram-ci](https://www.npmjs.com/package/miniprogram-ci) 上传代码到微信服务器。
 
 ```yaml
 upload:
   stage: upload
-  image: node:18
+  image: node:lts
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"
       variables:
-        ENV: "test"
         VERSION: "体验版"
     - if: $CI_COMMIT_BRANCH == "main"
       variables:
-        ENV: "prod"
         VERSION: "正式版"
   script:
-    - node scripts/upload.js --env=$ENV --version="$VERSION"
+    - node scripts/upload.mjs --version="$VERSION"
 ```
 
 #### 上传脚本
 
 ```js
-// scripts/upload.js
-const ci = require('miniprogram-ci');
-const path = require('path');
+// scripts/upload.mjs
+import ci from 'miniprogram-ci';
+import path from 'node:path';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const args = process.argv.slice(2);
-const envArg = args.find((a) => a.startsWith('--env='));
 const versionArg = args.find((a) => a.startsWith('--version='));
-
-const env = envArg?.split('=')[1] || 'test';
 const version = versionArg?.split('=')[1] || '体验版';
+
+const { version: pkgVersion } = JSON.parse(
+  fs.readFileSync(path.resolve(__dirname, '../package.json'), 'utf-8'),
+);
 
 const project = new ci.Project({
   appid: process.env.WX_APPID,
   type: 'miniProgram',
   projectPath: path.resolve(__dirname, '../'),
-  privateKeyPath: path.resolve(__dirname, `../cert/private.${env}.key`),
+  privateKey: process.env.WX_PRIVATE_KEY,
   ignores: ['node_modules/**/*'],
 });
 
-(async () => {
-  try {
-    const uploadResult = await ci.upload({
-      project,
-      version: require('../package.json').version,
-      desc: `${version} - ${new Date().toLocaleString()}`,
-      setting: {
-        es6: true,
-        es7: true,
-        minify: true,
-        autoPrefixWXSS: true,
-      },
-      onProgressUpdate: console.log,
-    });
+try {
+  const uploadResult = await ci.upload({
+    project,
+    version: pkgVersion,
+    desc: `${version} - ${new Date().toLocaleString()}`,
+    setting: {
+      es6: true,
+      es7: true,
+      minify: true,
+      autoPrefixWXSS: true,
+    },
+    onProgressUpdate: console.log,
+  });
 
-    console.log('上传成功', uploadResult);
-  } catch (error) {
-    console.error('上传失败', error);
-    process.exit(1);
-  }
-})();
+  console.log('上传成功', uploadResult);
+} catch (error) {
+  console.error('上传失败', error);
+  process.exit(1);
+}
 ```
+
+:::tip
+脚本使用 ESM 语法，文件后缀为 `.mjs`，无需在 `package.json` 中设置 `"type": "module"`（避免影响小程序运行时的 CommonJS 模块解析）。Node LTS 原生支持 ESM 与顶层 `await`。
+:::
 
 #### CI 密钥配置
 
-:::warning[安全]
-`private.*.key` 是小程序上传密钥，**严禁提交到代码仓库**。在 CI 中通过环境变量或密钥管理服务注入：
+上传脚本中的 `WX_APPID` 与 `WX_PRIVATE_KEY` 均来自 GitLab CI/CD 变量（Settings → CI/CD → Variables），无需在脚本中硬编码，也无需将密钥写入文件：
 
-```yaml
-upload:
-  before_script:
-    # 从 CI 变量写入密钥文件
-    - echo "$WX_PRIVATE_KEY" > cert/private.$ENV.key
-```
+| 变量 | 说明 | 掩码/保护 |
+|------|------|----------|
+| `WX_APPID` | 小程序 AppID | 可不掩码 |
+| `WX_PRIVATE_KEY` | 上传密钥的**完整内容**（从微信公众平台下载的 `.key` 文件内容） | 掩码 + 仅保护分支 |
+
+脚本通过 `privateKey: process.env.WX_PRIVATE_KEY` 直接将密钥内容传给 `miniprogram-ci`，无需 `privateKeyPath`，也不必在 CI 中 `echo` 写盘。
+
+:::warning[安全]
+上传密钥拥有预览、上传代码的权限，**严禁提交到代码仓库**。务必在 GitLab 中将 `WX_PRIVATE_KEY` 标记为 **Masked**，并限制仅在 `develop`/`main` 分支可用（Protected）。同时建议在微信公众平台配置上传白名单 IP（CI Runner 出口 IP）。
 :::
 
 ### 6. notify — 通知
@@ -232,7 +239,7 @@ variables:
 
 install:
   stage: install
-  image: node:18
+  image: node:lts
   cache:
     key: ${CI_COMMIT_REF_SLUG}
     paths:
@@ -245,7 +252,7 @@ install:
 
 lint:
   stage: lint
-  image: node:18
+  image: node:lts
   needs: [install]
   script:
     - npm run lint
@@ -253,7 +260,7 @@ lint:
 
 test:
   stage: test
-  image: node:18
+  image: node:lts
   needs: [install]
   script:
     - npm run test
@@ -266,7 +273,7 @@ test:
 
 build:
   stage: build
-  image: node:18
+  image: node:lts
   needs: [install]
   script:
     - npm run build:npm
@@ -276,25 +283,21 @@ build:
 
 upload:develop:
   stage: upload
-  image: node:18
+  image: node:lts
   needs: [lint, test, build]
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"
-  before_script:
-    - echo "$WX_PRIVATE_KEY_TEST" > cert/private.test.key
   script:
-    - node scripts/upload.js --env=test --version="体验版"
+    - node scripts/upload.mjs --version="体验版"
 
 upload:main:
   stage: upload
-  image: node:18
+  image: node:lts
   needs: [lint, test, build]
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
-  before_script:
-    - echo "$WX_PRIVATE_KEY_PROD" > cert/private.prod.key
   script:
-    - node scripts/upload.js --env=prod --version="正式版"
+    - node scripts/upload.mjs --version="正式版"
 
 notify:
   stage: notify
@@ -316,91 +319,7 @@ notify:
 正式版上传后不会自动发布，需在微信公众平台 → 版本管理 → 提交审核，审核通过后手动发布。
 :::
 
-## 本地部署
-
-不使用 CI 时，也可在本地通过 `miniprogram-ci` 手动构建和上传。
-
-### 命令行配置
-
-```json
-{
-  "scripts": {
-    "build": "node scripts/build.js",
-    "deploy": "node scripts/deploy.js"
-  },
-  "devDependencies": {
-    "miniprogram-ci": "^1.8.35"
-  }
-}
-```
-
-```bash
-# 构建 npm
-npm run build
-
-# 上传代码
-npm run deploy
-```
-
-### 构建 npm
-
-```js
-// scripts/build.js
-const path = require('path');
-const ci = require('miniprogram-ci');
-
-(async () => {
-  const packResult = await ci.packNpmManually({
-    packageJsonPath: path.join(__dirname, '../package.json'),
-    miniprogramNpmDistDir: path.join(__dirname, '../src/'),
-    ignores: [],
-  });
-
-  console.log('pack done, packResult:', packResult);
-})();
-```
-
-### 上传代码
-
-```js
-// scripts/deploy.js
-const path = require('path');
-const ci = require('miniprogram-ci');
-
-(async () => {
-  const project = new ci.Project({
-    appid: '<YOUR_APPID>',
-    projectPath: path.join(__dirname, '../'),
-    privateKeyPath: '<YOUR_PROJECT_KEY>',
-    type: 'miniProgram',
-    ignores: ['node_modules/**/*'],
-  });
-
-  const uploadResult = await ci.upload({
-    project,
-    version: '<VERSION>',
-    desc: '修复了一些已知问题',
-    setting: {
-      es6: true,
-      es7: true,
-      disableUseStrict: false,
-      minify: true,
-      codeProtect: true,
-      autoPrefixWXSS: true,
-    },
-    onProgressUpdate: console.log,
-  });
-
-  console.log(uploadResult);
-})();
-```
-
-:::tip
-上传密钥可以在 "[微信公众平台](https://mp.weixin.qq.com/) - 开发 - 开发设置" 获取，并建议设置上传白名单 IP。
-:::
-
 ## 参考资料
 
 - [miniprogram-ci](https://developers.weixin.qq.com/miniprogram/dev/devtools/ci.html)
 - [GitLab CI/CD](https://docs.gitlab.com/ee/ci/)
-- [GitHub Actions](https://docs.github.com/zh/actions)
