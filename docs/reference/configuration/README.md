@@ -62,9 +62,9 @@ description: 微信小程序参考配置，包含 project.config.json、sitemap.
     "checkSiteMap": true,
     "userConfirmedBundleSwitch": false
   },
-  "libVersion": "2.25.1",
+  "libVersion": "3.16.2",
   "appid": "wx768c7751fe2b26c3",
-  "projectname": "众业达商城",
+  "projectname": "老魏小程序实践",
   "packOptions": {
     "ignore": [],
     "include": []
