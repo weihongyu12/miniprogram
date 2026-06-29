@@ -4,40 +4,40 @@ description: 微信小程序 TypeScript 实践，项目配置、类型约束与�
 
 # TypeScript
 
-完整的 Page / Component / App / Behavior 写法示例见 [TypeScript](../../cookbook/typescript/)。
+本文档旨在规范小程序开发中的 TypeScript 使用习惯，确保项目类型安全且易于维护。完整的 `Page` / `Component` / `App` / `Behavior` 写法示例请参考 [TypeScript](../../cookbook/typescript/)。
 
-## 为什么小程序值得用 TypeScript
+## 为什么小程序需要 TypeScript
 
-原生小程序的 `Page` / `Component` 选项式 API 大量依赖字符串字段名（`data`、`setData`、`properties`、`methods`），用 JS 开发时常见痛点：
+原生小程序的选项式 API 严重依赖字符串字段名（`data`、`setData`、`properties`），使用 JS 开发时极易出现难以察觉的运行时错误：
 
-- `this.data.xxx` 拼写错误运行时才暴露
-- `wx.request` 返回值无类型，需要手写 interface
-- properties 类型与父组件传值不匹配
-- 跨页面/组件共享的数据结构无文档
+- **拼写错误**：`this.data.xxx` 拼写错误直到运行时才暴露
+- **接口脆弱**：`wx.request` 返回值缺乏类型定义
+- **传值不匹配**：组件 `properties` 与父组件传递的值类型不一致
+- **文档缺失**：跨模块共享的数据结构缺乏类型约束，逻辑难以追踪
 
-TypeScript 在编译期就能拦截这些问题。微信开发者工具从 `1.05.2109101` 起原生支持 TS，**无需额外构建配置**。
+TypeScript 在编译期即可拦截上述问题。微信开发者工具从 `1.05.2109101` 起[原生支持 TS](https://developers.weixin.qq.com/miniprogram/dev/devtools/compilets.html)，**无需额外的构建任务**。
 
-## 工作原理（重要）
+## 工作原理（核心机制）
 
-小程序原生 TS 编译由开发者工具内置的 `@babel/plugin-transform-typescript` 插件完成。**该插件只做"类型剥离"（strip types），不做类型检查**：
+微信小程序原生 TS 编译由开发者工具内置的 `@babel/plugin-transform-typescript` 插件处理。**请务必注意：该插件仅进行“类型剥离”（strip types），不执行类型检查**。
 
-- 编译时：移除类型注解，输出 JS
-- 类型错误：仅在编辑器（IDE / VSCode）中提示，**编译过程不报错、不阻断**
+- **编译时**：移除类型注解，输出 JavaScript
+- **编译错误**：编译阶段不会阻断，也不会报错
 
-这意味着：
+**这意味着**：
 
-- 类型错误不会让小程序无法运行（好处：不会因类型问题卡住构建）
-- 但也意味着 TS 的类型保护**依赖编辑器**，不能只靠编译器把关
+- 类型错误不会导致小程序无法运行（避免了构建卡死）
+- **类型安全完全依赖 IDE 检查**。不能因为编译通过就认为代码类型安全，必须配合 IDE 提示或在 CI 中手动检查
 
 :::warning
-不能因为"工具没报错"就以为类型正确。强烈建议配合 IDE，或在 CI 中运行 `tsc --noEmit` 做真正的类型检查。
+严禁因“工具没报错”而忽视类型检查。必须通过 CI 运行 `tsc --noEmit` 进行全量类型校验。
 :::
 
 ## 项目配置
 
-### 1. 开启 TS 编译插件
+### 1. 开启编译器插件
 
-`project.config.json` 的 `setting.useCompilerPlugins` 加入 `"typescript"`：
+在 `project.config.json` 的 `setting.useCompilerPlugins` 中添加 `"typescript"`：
 
 ```json
 {
@@ -47,9 +47,7 @@ TypeScript 在编译期就能拦截这些问题。微信开发者工具从 `1.05
 }
 ```
 
-支持同时开启 `typescript`、`less`、`sass` 三种编译插件。
-
-### 2. tsconfig.json
+### 2. tsconfig.json 配置
 
 ```json
 {
@@ -73,99 +71,75 @@ TypeScript 在编译期就能拦截这些问题。微信开发者工具从 `1.05
 }
 ```
 
-要点：
+### 3. 类型声明包
 
-- `target` 建议用 ES2020，小程序运行时支持现代 ES 语法
-- `types` 引入 `miniprogram-api-typings`（见下节）
-- `paths` 配合 `@/` 别名，与 [分层架构](../../getting-started/) 一致
-
-### 3. 安装类型声明包
+安装官方 API 类型定义：
 
 ```bash
 npm install -D miniprogram-api-typings
 ```
 
-`miniprogram-api-typings` 提供 `wx.*`、`App`、`Page`、`Component`、`Behavior`、`getCurrentPages`、`getApp` 等全部小程序 API 的类型定义。
-
 :::tip[更新声明文件]
-从模板创建的 TS 项目，遇到 API 类型过时时，可在开发者工具目录树 `typings/types/wx` 上右键 → "更新声明文件"。
+如遇 API 类型过时，在开发者工具目录树的 `typings/types/wx` 上右键，选择“更新声明文件”。
 :::
 
-## 常见陷阱
+## 类型管理策略
+
+### 1. 后端接口类型（自动管理）
+
+本项目已接入 Orval 自动生成后端接口模型。所有类型定义存放在 `src/api/model` 目录下。
+
+- **原则**：严禁手动编写接口类型。
+- **使用方式**：直接从对应模块导入。
+
+```ts
+import type { LoginResponse } from '@/api/model';
+
+const { token } = await request<LoginResponse>({ /* ... */ });
+```
+
+### 2. 前端全局业务类型（手动管理）
+
+对于非后端返回的、纯前端共享的业务领域类型，统一维护在 `typings/` 目录下。
+
+```
+typings/
+├── business.d.ts     # 业务领域类型定义
+└── index.d.ts
+```
+
+:::warning[避坑指南]
+在 `.d.ts` 文件中，请避免在顶层使用 `import` 或 `export`。因为这会使文件被视为“模块（Module）”，导致定义的 namespace 失去全局作用域。正确的做法是使用 `declare namespace` 直接声明，以便在任意页面直接调用。
+:::
+
+## 常见陷阱与最佳实践
 
 ### 1. setData 类型不安全
 
-小程序原生 `setData` 不做字段类型校验：
+原生 `setData` 不约束入参字段。建议编写一个辅助函数进行包装，或在 Strict 模式下通过 IDE 严格检查。
 
-```ts
-this.setData({ count: 'oops' });  // TS 不报错（运行时才出错）
-```
+### 2. properties 默认值
 
-原因：`Page` / `Component` 泛型只约束 `data` 字段，不约束 `setData` 入参。
+`properties` 定义中 `value` 的类型推断有限。编写时务必确保 `value` 与定义的 `type` 类型一致，并手动进行校对。
 
-**应对**：在 strict 模式下编码，依赖编辑器实时检查；高级用法可包装一层类型安全的 `setData`。
+### 3. this.data 与 setData
 
-### 2. properties 默认值类型推断
+`this.data` 是只读快照。直接修改 `this.data.xxx = ...` **不会触发页面更新**。必须使用 `this.setData`。
 
-`properties: { step: { type: Number, value: 1 } }` 中，`value` 字段的类型不会被严格约束（写成字符串也不会报错）。需手动校对。
+### 4. wx API 的 Promise 化
 
-### 3. this.data 与 setData 数据流
-
-`this.data` 在 `methods` 内是只读快照，**修改 `this.data.xxx = ...` 不生效**。必须用 `setData`：
-
-```ts
-// ❌ 错误：直接修改不触发渲染
-this.data.count += 1;
-
-// ✅ 正确
-this.setData({ count: this.data.count + 1 });
-```
-
-### 4. wx API 的回调风格与 Promise
-
-`wx.xxx` 既支持 callback 风格，也支持 Promise（基础库 2.10.2+）。在 TS 中优先用 Promise/async：
+优先使用 Promise 风格的 API，以提升异步代码的可读性：
 
 ```ts
 // ✅ 推荐
 const { code } = await wx.login();
 
-// 旧式回调也可用，但需注意类型
-wx.login({
-  success: (res) => { /* res.code: string */ },
-});
+// ❌ 尽量避免旧的回调风格，除非处理复杂交互
 ```
 
-### 5. 跨页面共享类型
+## CI 中的类型校验
 
-将业务相关的类型定义放在 `typings/` 目录，统一管理：
-
-```
-typings/
-├── api.d.ts          # 后端接口响应类型
-├── business.d.ts     # 业务领域类型
-└── index.d.ts
-```
-
-```ts
-// typings/api.d.ts
-declare namespace API {
-  interface LoginResponse {
-    token: string;
-    refreshToken: string;
-    isNewUser: boolean;
-  }
-}
-```
-
-使用时无需 import：
-
-```ts
-const { token } = await request<API.LoginResponse>({ /* ... */ });
-```
-
-## CI 中的类型检查
-
-由于开发者工具内置编译器不做类型检查，CI 中应运行 `tsc --noEmit`：
+由于开发者工具仅剥离类型，CI/CD 流程中必须显式增加类型检查步骤：
 
 ```json
 // package.json
@@ -176,19 +150,17 @@ const { token } = await request<API.LoginResponse>({ /* ... */ });
 }
 ```
 
-CI 中加入：
+在 CI 配置文件中添加：
 
 ```yaml
 lint:
   script:
     - npm run lint
     - npm run type-check
-    - npm run lint:style
 ```
 
 ## 参见
 
-- [原生支持 TypeScript（官方）](https://developers.weixin.qq.com/miniprogram/dev/devtools/compilets.html)
-- [miniprogram-api-typings](https://github.com/wechat-miniprogram/api-typings)
-- [TypeScript](../../cookbook/typescript/)
+- [原生支持 TypeScript](https://developers.weixin.qq.com/miniprogram/dev/devtools/compilets.html)
+- [miniprogram-api-typings](https://www.npmjs.com/package/miniprogram-api-typings)
 - [项目目录规范](../../specification/directory/)
