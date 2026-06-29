@@ -1,8 +1,10 @@
 ---
-lang: zh-cmn-Hans-CN
 title: 指南
 description: 微信小程序开发实践指南，介绍项目架构（pages → services 两层架构）与技术栈选型
 ---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 # 架构
 
@@ -24,11 +26,10 @@ description: 微信小程序开发实践指南，介绍项目架构（pages → 
 | 状态管理           | mobx-miniprogram + bindings                                             |
 | ESLint         | airbnb                                                                  |
 | stylelint      | Bootstrap                                                               |
-| 单元测试           | 🚧工作进行中                                                                 |
-|                | Jest + MiniProgram Simulate                                             |
+| 单元测试           | Jest + MiniProgram Simulate                                             |
 | E2E 测试         | miniprogram-automator                                                   |
 | MiniProgram CI | ✔️                                                                      |
-| 云开发            | ❌不支持                                                                    |
+| 云开发            | ⚖️ 视情况而定                                                              |
 
 - 使用原生小程序开发方式，降低学习成本
 - 支持 npm 使用第三方工具包
@@ -100,6 +101,9 @@ graph TD
 
 `services` 是业务相关平台 API 的唯一收口处，也是业务流程的编排者。每个子模块对应一个业务域或一类平台能力。**UI 类 `wx.*`（跳转、Toast、Loading）不属于 services 的职责，留在 pages 中使用即可。**
 
+<Tabs>
+  <TabItem value="http" label="http">
+
 ```ts
 // services/http/request.ts
 interface RequestConfig {
@@ -133,6 +137,9 @@ export const request = <T = unknown>(config: RequestConfig): Promise<T> => {
 };
 ```
 
+  </TabItem>
+  <TabItem value="storage" label="storage">
+
 ```ts
 // services/storage/index.ts
 // 封装 wx.storage，提供带过期时间的缓存能力
@@ -159,6 +166,9 @@ export const storage = {
   },
 };
 ```
+
+  </TabItem>
+  <TabItem value="auth" label="auth">
 
 ```ts
 // services/auth/login.ts
@@ -196,6 +206,9 @@ export const login = async () => {
   return { token, refreshToken };
 };
 ```
+
+  </TabItem>
+</Tabs>
 
 #### pages 页面层
 

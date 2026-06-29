@@ -1,5 +1,4 @@
 ---
-sidebar_position: 2
 description: 微信小程序 Lint 配置实践，ESLint 全局变量声明、stylelint 规则与 husky 集成
 ---
 

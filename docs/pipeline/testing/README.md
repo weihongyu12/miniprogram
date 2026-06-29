@@ -1,5 +1,4 @@
 ---
-sidebar_position: 4
 description: 微信小程序测试实践，使用 Jest、miniprogram-simulate、miniprogram-automator 进行单元测试、组件测试与 E2E 测试
 ---
 

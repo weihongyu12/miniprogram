@@ -1,5 +1,4 @@
 ---
-sidebar_position: 7
 description: 微信小程序 CI/CD 实践，基于 miniprogram-ci 的自动化构建、测试、质量检查与上传流程
 ---
 
