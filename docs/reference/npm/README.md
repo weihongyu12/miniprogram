@@ -1,4 +1,4 @@
----
+﻿---
 description: 微信小程序 npm 支持原理，与 Web npm 的差异、构建方式与使用限制
 ---
 
@@ -6,9 +6,9 @@ description: 微信小程序 npm 支持原理，与 Web npm 的差异、构建�
 
 ## 小程序 npm 与 Web npm 的差异
 
-Web 项目中，`npm install` 后直接 `import` 即可，打包工具（webpack/vite）会处理依赖。
+Web 项目中，`npm install` 后直接 `import` 即可，打包工具会处理依赖。
 
-小程序不是浏览器环境，没有 webpack 这层打包。微信官方提供的"npm 支持"是一个**受控的 npm 子集**：
+小程序不是浏览器环境，没有 webpack 这层打包。微信官方提供的“[npm 支持](https://developers.weixin.qq.com/miniprogram/dev/devtools/npm.html)”是一个**受控的 npm 子集**：
 
 | 对比项 | Web | 小程序 |
 |--------|-----|--------|
@@ -19,7 +19,7 @@ Web 项目中，`npm install` 后直接 `import` 即可，打包工具（webpack
 | 包大小 | 无限制 | 受小程序包大小限制（主包 2MB，总包 20MB） |
 
 :::warning
-小程序的"构建 npm" ≠ Web 的"打包构建"。它只是把 `node_modules/` 中的包按小程序格式整理到 `miniprogram_npm/`，**不会做 Tree-shaking、压缩或转译**。
+小程序的“构建 npm” ≠ Web 的“打包构建”。它只是把 `node_modules/` 中的包按小程序格式整理到 `miniprogram_npm/`，**不会做 Tree-shaking、压缩或转译**。
 :::
 
 ## 配置
@@ -40,7 +40,7 @@ Web 项目中，`npm install` 后直接 `import` 即可，打包工具（webpack
 }
 ```
 
-- `packNpmManually: true`：手动指定 package.json 与产物目录
+- `packNpmManually: true`：手动指定 `package.json` 与产物目录
 - `packageJsonPath`：项目根的 `package.json`
 - `miniprogramNpmDistDir`：构建产物 `miniprogram_npm/` 输出位置（一般是 `src/`）
 
@@ -51,15 +51,23 @@ Web 项目中，`npm install` 后直接 `import` 即可，打包工具（webpack
 ```json
 {
   "dependencies": {
-    "dayjs": "^1.11.10",
-    "mobx-miniprogram": "^6.12.0",
+    "dayjs": "^1.11.21",
+    "miniprogram-computed": "^8.0.0",
+    "mobx-miniprogram": "^6.12.3",
     "mobx-miniprogram-bindings": "^6.0.0"
   },
   "devDependencies": {
-    "miniprogram-api-typings": "^4.0.0",
-    "miniprogram-simulate": "^1.6.0",
+    "miniprogram-api-typings": "^5.2.1",
     "miniprogram-automator": "^1.0.0",
-    "miniprogram-ci": "^1.9.0"
+    "miniprogram-ci": "^2.1.31",
+    "miniprogram-simulate": "^1.6.1",
+    "jest": "^30.0.0",
+    "eslint": "^8.57.1",
+    "eslint-config-airbnb-base": "^19.0.4",
+    "stylelint": "^17.13.0",
+    "stylelint-config-twbs-bootstrap": "^16.1.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^17.0.0"
   }
 }
 ```
@@ -73,22 +81,23 @@ Web 项目中，`npm install` 后直接 `import` 即可，打包工具（webpack
 #### 方式 B：miniprogram-ci（CI/脚本）
 
 ```js
-// scripts/build-npm.js
-const path = require('path');
-const ci = require('miniprogram-ci');
+// scripts/build-npm.mjs
+import ci from 'miniprogram-ci';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-(async () => {
-  const result = await ci.packNpmManually({
-    packageJsonPath: path.join(__dirname, '../package.json'),
-    miniprogramNpmDistDir: path.join(__dirname, '../src/'),
-    ignores: ['miniprogram-ci'],
-  });
-  console.log('pack done:', result);
-})();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const result = await ci.packNpmManually({
+  packageJsonPath: path.resolve(__dirname, '../package.json'),
+  miniprogramNpmDistDir: path.resolve(__dirname, '../src/'),
+  ignores: ['miniprogram-ci'],
+});
+console.log('pack done:', result);
 ```
 
 ```bash
-node scripts/build-npm.js
+node scripts/build-npm.mjs
 ```
 
 ## 使用 npm 包
@@ -107,78 +116,47 @@ Page({
 });
 ```
 
-:::warning[路径]
-小程序不会自动找 `node_modules/`，**只识别 `miniprogram_npm/`**。如果忘了构建 npm，运行时会报 `Cannot find module 'xxx'`。
+:::warning
+小程序不会自动找 `node_modules/`，只识别 `miniprogram_npm/`。如果忘了构建 npm，运行时会报 `Cannot find module 'xxx'`。
 :::
 
 ## npm 使用的限制与建议
 
-### 1. 包大小要克制
+### 1. 严格控制包大小
 
-小程序不支持 Tree-shaking，整包打入。一个全量 lodash（~400KB）会让主包直接超限。
+小程序无 Tree-shaking，依赖会整包打包：
 
-**建议**：
+- 优先用独立方法包（如 `lodash.throttle`）或轻量库（如 `dayjs`）
+- 大体积库建议放入分包
 
-- 用独立方法包：`npm i lodash.throttle`，而不是 `npm i lodash`
-- 优先选轻量库：`dayjs` 替代 `moment`
-- 体积大的库放分包
+### 2. 禁用原生 Node 模块
 
-### 2. 不能用原生 Node 模块
+不支持 `fs`、`path`、`child_process` 等原生模块；引入前需检查依赖。
 
-`fs`、`path`、`child_process`、`crypto`（Node 版）等都不可用。引入前看包的 dependencies。
+### 3. 需手动 Polyfill 全局对象
 
-### 3. 全局对象 polyfill
-
-部分库依赖 `global`、`window`、`document` 等全局对象，小程序运行时没有。需手动 polyfill：
+小程序无 `global`、`window` 等对象；若第三方库存在依赖，需在使用前自行注入全局变量并引入：
 
 ```js
 // utils/polyfill.js
 global.Object = Object;
-global.Array = Array;
-global.Promise = Promise;
-// ...
+// 注入后在入口文件处 import './utils/polyfill' 即可
 ```
 
-在使用前引入：
+### 4. 依赖变更需重新构建
 
-```js
-import './utils/polyfill';
-import throttle from 'lodash.throttle';
-```
+每次执行 `npm install` 升级依赖后，必须重新“构建 npm”才能生效；建议配置 npm scripts 简化流程。
 
-### 4. 升级依赖要重新构建
+### 5. 勿将 miniprogram_npm 提交 Git
 
-每次 `npm install` 升级依赖后，必须重新跑"构建 npm"，否则 `miniprogram_npm/` 还是旧版本。
+为保持代码仓库整洁，建议在 `.gitignore` 中加入构建产物，并在本地微信开发者工具或者 CI 环节中通过脚本自动重新构建：
 
-可在 `package.json` 加 script 串起来：
-
-```json
-{
-  "scripts": {
-    "build:npm": "node scripts/build-npm.js"
-  }
-}
-```
-
-### 5. miniprogram_npm 是否提交 git
-
-两种做法：
-
-| 做法 | 优点 | 缺点 |
-|------|------|------|
-| 提交 | clone 后立即可跑，无需构建 | 仓库体积大，依赖版本与代码可能不同步 |
-| 不提交 | 仓库干净 | clone 后必须执行构建 npm |
-
-**推荐不提交**，在 `.gitignore` 中加入：
-
-```
+```gitignore
 src/miniprogram_npm/
 ```
 
-CI 中通过 `npm run build:npm` 重新构建。
-
 ## 参见
 
-- [npm 支持（官方）](https://developers.weixin.qq.com/miniprogram/dev/devtools/npm.html)
+- [npm 支持](https://developers.weixin.qq.com/miniprogram/dev/devtools/npm.html)
 - [miniprogram-ci packNpm](https://developers.weixin.qq.com/miniprogram/dev/devtools/ci.html)
 - [CI/CD](../../pipeline/ci/)
