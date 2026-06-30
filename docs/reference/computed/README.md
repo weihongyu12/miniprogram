@@ -4,7 +4,7 @@ description: miniprogram-computed 工作原理与适用场景，为 Component �
 
 # 计算属性
 
-完整的 computed / watch 代码示例见 [计算属性](../../cookbook/computed/)。
+完整的 computed / watch 代码示例见 [Cookbook](../../cookbook/computed/)。
 
 ## 什么是 miniprogram-computed
 
@@ -45,6 +45,7 @@ computed 函数签名是 `computed(data)`，**只能通过 `data` 参数访问�
 原因：computed 在 data 变更的同步流程中执行，此时 `this` 上的方法等可能尚未就绪，访问 `this` 会破坏响应式追踪的纯函数特性。
 :::
 
+:::danger[❌ 错误例子]
 ```js
 // ❌ 错误：computed 中访问 this
 computed: {
@@ -52,7 +53,11 @@ computed: {
     return data.a + this.properties.step;  // this 不可用
   },
 },
+```
+:::
 
+:::tip[✅ 正确例子]
+```js
 // ✅ 正确：只依赖 data
 computed: {
   sum(data) {
@@ -60,6 +65,7 @@ computed: {
   },
 },
 ```
+:::
 
 如果派生值依赖 properties，应把 properties 的值同步到 data，或在 computed 中通过 `data` 访问（properties 字段也会出现在 data 中）。
 
@@ -98,17 +104,17 @@ watch 中可以访问 `this`（与 computed 不同），常用于触发请求或
 
 ### ✅ 推荐
 
-- 表单组件：`总价 = 单价 × 数量`、`是否可提交` 等派生字段
-- 联动逻辑：A 字段变化需触发请求或更新 B 字段
-- 复杂组件：存在多个互相依赖的 data 字段
+- **表单组件**：`总价 = 单价 × 数量`、`是否可提交` 等派生字段
+- **联动逻辑**：A 字段变化需触发请求或更新 B 字段
+- **复杂组件**：存在多个互相依赖的 data 字段
 
 ### ⚠️ 谨慎
 
-- 简单组件：只有一两个字段，引入 behavior 反而增加心智负担
-- 需要访问 `this` 的计算逻辑：computed 不支持，应改用 methods 手动调用
+- **简单组件**：只有一两个字段，引入 behavior 反而增加心智负担
+- **需要访问 `this` 的计算逻辑**：computed 不支持，应改用 methods 手动调用
 
 ## 参见
 
-- [miniprogram-computed（GitHub）](https://github.com/wechat-miniprogram/computed)
+- [miniprogram-computed](https://github.com/wechat-miniprogram/computed)
 - [计算属性](../../cookbook/computed/)
 - [状态管理](../state-management/)
