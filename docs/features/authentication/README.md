@@ -127,14 +127,14 @@ export const login = (): Promise<string> => {
 :::
 
 ```wxml
-<!-- pages/login/login.wxml -->
+<!-- pages/login/index.wxml -->
 <button open-type="getPhoneNumber" bind:getphonenumber="onGetPhoneNumber">
   手机号一键登录
 </button>
 ```
 
 ```ts
-// pages/login/login.ts
+// pages/login/index.ts
 import { bindPhone } from '@/services/auth';
 
 Page({
@@ -149,7 +149,7 @@ Page({
       if (isNewUser) {
         wx.redirectTo({ url: '/pages/profile/setup' });
       } else {
-        wx.switchTab({ url: '/pages/home/home' });
+        wx.switchTab({ url: '/pages/home/index' });
       }
     } catch (error) {
       wx.showToast({ title: '登录失败', icon: 'error' });

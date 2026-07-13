@@ -93,7 +93,7 @@ export const login = async (): Promise<LoginResult> => {
 ### pages 层：调用登录
 
 ```ts
-// pages/login/login.ts
+// pages/login/index.ts
 import { login } from '@/services/auth';
 
 Page({
@@ -112,7 +112,7 @@ Page({
         // 新用户跳转手机号绑定页
         wx.redirectTo({ url: '/pages/login/bind-phone' });
       } else {
-        wx.switchTab({ url: '/pages/home/home' });
+        wx.switchTab({ url: '/pages/home/index' });
       }
     } catch (error) {
       wx.showToast({ title: '登录失败，请重试', icon: 'error' });
@@ -175,7 +175,7 @@ const handle401 = async (retryRequest: () => Promise<unknown>) => {
     // 刷新失败，清除 token 并跳转登录
     tokenManager.clear();
     pendingRequests = [];
-    wx.reLaunch({ url: '/pages/login/login' });
+    wx.reLaunch({ url: '/pages/login/index' });
     throw error;
   } finally {
     isRefreshing = false;
@@ -196,7 +196,7 @@ App({
     const token = tokenManager.get();
     if (!token) {
       // 无 token，跳转登录
-      wx.reLaunch({ url: '/pages/login/login' });
+      wx.reLaunch({ url: '/pages/login/index' });
       return;
     }
 

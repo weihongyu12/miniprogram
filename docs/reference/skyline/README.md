@@ -81,7 +81,7 @@ Skyline 的核心收益：
 也可只在某些页面用 Skyline，其他保留 WebView：
 
 ```json
-// pages/home/home.json
+// pages/home/index.json
 {
   "renderer": "skyline",
   "componentFramework": "glass-easel"

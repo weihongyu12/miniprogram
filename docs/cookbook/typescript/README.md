@@ -11,7 +11,7 @@ description: 微信小程序 TypeScript 实践示例，Page、Component、App、
 `Page<PageData>` 泛型约束 `data` 字段，`this.data` 自动推断类型。
 
 ```ts
-// pages/profile/profile.ts
+// pages/profile/index.ts
 interface PageData {
   userInfo: WechatMiniprogram.UserInfo | null;
   loading: boolean;
@@ -98,7 +98,7 @@ App<AppOption>({
 ```
 
 ```ts
-// pages/home/home.ts
+// pages/home/index.ts
 const app = getApp<AppOption>();
 const systemInfo = app.globalData.systemInfo;  // 类型推断为 SystemInfo | undefined
 ```
@@ -120,7 +120,7 @@ export const shareBehavior = Behavior<Data>({
     onShareAppMessage() {
       return {
         title: this.data.shareTitle,
-        path: '/pages/home/home',
+        path: '/pages/home/index',
       };
     },
   },

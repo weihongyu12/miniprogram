@@ -156,7 +156,7 @@ export const genQrcode = (params: GenQrcodeParams) => {
 ### 3. pages 层调用
 
 ```ts
-// pages/poster/poster.ts
+// pages/poster/index.ts
 import { genQrcode } from '@/services/cloud/qrcode';
 
 Page({
@@ -179,7 +179,7 @@ Page({
 ```
 
 ```xml
-<!-- pages/poster/poster.wxml -->
+<!-- pages/poster/index.wxml -->
 <image src="{{qrcodeUrl}}" mode="aspectFit" />
 <t-button bindtap="onGenTap" loading="{{loading}}">生成推广码</t-button>
 ```

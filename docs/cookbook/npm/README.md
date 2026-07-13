@@ -44,7 +44,7 @@ node scripts/build-npm.js
 ### 3. 在页面中使用
 
 ```ts
-// src/pages/order/order.ts
+// src/pages/order/index.ts
 import dayjs from 'dayjs';
 
 Page({
@@ -64,7 +64,7 @@ Page({
 ```
 
 ```xml
-<!-- src/pages/order/order.wxml -->
+<!-- src/pages/order/index.wxml -->
 <view>下单时间：{{createTime}}</view>
 <view>相对时间：{{relativeTime}}</view>
 ```

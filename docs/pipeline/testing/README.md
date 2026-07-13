@@ -424,7 +424,7 @@ describe('登录流程 E2E', () => {
   });
 
   beforeEach(async () => {
-    page = await miniProgram.reLaunch('/pages/login/login');
+    page = await miniProgram.reLaunch('/pages/login/index');
     await page.waitFor(500);
   });
 
@@ -434,7 +434,7 @@ describe('登录流程 E2E', () => {
 
     await page.waitFor(1000);
     const currentPage = await miniProgram.currentPage();
-    expect(currentPage.path).toBe('pages/home/home');
+    expect(currentPage.path).toBe('pages/home/index');
   });
 });
 ```
@@ -500,7 +500,7 @@ describe('下单流程 E2E', () => {
   });
 
   it('从首页到下单成功全链路', async () => {
-    await miniProgram.reLaunch('/pages/home/home');
+    await miniProgram.reLaunch('/pages/home/index');
 
     // 1. 点击第一个商品
     const item = await miniProgram.$('.goods-item');
@@ -512,7 +512,7 @@ describe('下单流程 E2E', () => {
     await addBtn.tap();
 
     // 3. 跳到购物车
-    await miniProgram.navigateTo({ url: '/pages/cart/cart' });
+    await miniProgram.navigateTo({ url: '/pages/cart/index' });
     await miniProgram.waitFor(500);
 
     // 4. 结算
@@ -522,7 +522,7 @@ describe('下单流程 E2E', () => {
     // 5. 验证跳转到订单页
     await miniProgram.waitFor(1500);
     const current = await miniProgram.currentPage();
-    expect(current.path).toBe('pages/order/order');
+    expect(current.path).toBe('pages/order/index');
   });
 
   afterAll(async () => {

@@ -1,4 +1,4 @@
-﻿---
+---
 description: 微信小程序 npm 支持原理，与 Web npm 的差异、构建方式与使用限制
 ---
 
@@ -105,7 +105,7 @@ node scripts/build-npm.mjs
 构建完成后，代码中直接 `require` / `import`：
 
 ```ts
-// src/pages/home/home.ts
+// src/pages/home/index.ts
 import dayjs from 'dayjs';
 
 Page({

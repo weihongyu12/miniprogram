@@ -29,23 +29,23 @@ description: 微信小程序分包机制，包大小限制、分包配置、独�
 ```json
 {
   "pages": [
-    "pages/home/home",
-    "pages/login/login"
+    "pages/home/index",
+    "pages/login/index"
   ],
   "subPackages": [
     {
       "root": "packages/order",
       "name": "order",
       "pages": [
-        "pages/list/list",
-        "pages/detail/detail"
+        "pages/list/index",
+        "pages/detail/index"
       ]
     },
     {
       "root": "packages/marketing",
       "name": "marketing",
       "pages": [
-        "pages/coupon/coupon"
+        "pages/coupon/index"
       ]
     }
   ]
@@ -75,7 +75,7 @@ src/
 ```
 
 :::warning[路径易错点]
-分包页面的最终访问路径是 `/${root}/${page}`，例如 `packages/order/pages/list/list`。
+分包页面的最终访问路径是 `/${root}/${page}`，例如 `packages/order/pages/list/index`。
 
 - 在 `app.json` 的 `subPackages[].pages` 中**不要写 `root` 前缀**
 - 在 `wx.navigateTo` 等 API 调用中**必须带 `root` 前缀**
@@ -87,13 +87,13 @@ src/
 
 ```ts
 // 主包页面跳转到分包页面
-wx.navigateTo({ url: '/packages/order/pages/list/list' });
+wx.navigateTo({ url: '/packages/order/pages/list/index' });
 
 // 分包页面之间互相跳转
-wx.navigateTo({ url: '/packages/marketing/pages/coupon/coupon' });
+wx.navigateTo({ url: '/packages/marketing/pages/coupon/index' });
 
 // 分包页面跳回主包页面
-wx.switchTab({ url: '/pages/home/home' });
+wx.switchTab({ url: '/pages/home/index' });
 ```
 
 :::warning
@@ -107,11 +107,11 @@ wx.switchTab({ url: '/pages/home/home' });
 ```json
 {
   "preloadRule": {
-    "pages/home/home": {
+    "pages/home/index": {
       "network": "all",
       "packages": ["order", "marketing"]
     },
-    "pages/login/login": {
+    "pages/login/index": {
       "network": "wifi",
       "packages": ["__APP__"]
     }
@@ -154,7 +154,7 @@ wx.switchTab({ url: '/pages/home/home' });
     {
       "root": "packages/promo",
       "name": "promo",
-      "pages": ["pages/landing/landing"],
+      "pages": ["pages/landing/index"],
       "independent": true
     }
   ]
@@ -170,7 +170,7 @@ wx.switchTab({ url: '/pages/home/home' });
 - 主包 `App.onLaunch` 不会执行，需在独立分包页面 `onLoad` 中自行初始化
 
 ```ts
-// packages/promo/pages/landing/landing.ts
+// packages/promo/pages/landing/index.ts
 Page({
   onLoad() {
     // 独立分包中 getApp() 可能为 undefined
@@ -201,7 +201,7 @@ Page({
 通过 `require.async` 异步加载：
 
 ```ts
-// packages/order/pages/list/list.ts
+// packages/order/pages/list/index.ts
 Page({
   async onLoad() {
     // 异步引用主包的 services
@@ -238,16 +238,16 @@ Page({
 
 ```ts
 // ❌ 在 app.json 的 subPackages.pages 中带了 root 前缀
-{ "root": "packages/order", "pages": ["packages/order/pages/list/list"] }
+{ "root": "packages/order", "pages": ["packages/order/pages/list/index"] }
 
 // ✅ pages 相对 root
-{ "root": "packages/order", "pages": ["pages/list/list"] }
+{ "root": "packages/order", "pages": ["pages/list/index"] }
 
 // ❌ 跳转时漏了 root 前缀
-wx.navigateTo({ url: '/pages/list/list' })
+wx.navigateTo({ url: '/pages/list/index' })
 
 // ✅ 跳转用完整路径
-wx.navigateTo({ url: '/packages/order/pages/list/list' })
+wx.navigateTo({ url: '/packages/order/pages/list/index' })
 ```
 
 ### 2. 分包体积超限未察觉

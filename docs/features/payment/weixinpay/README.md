@@ -153,7 +153,7 @@ const pollOrderStatus = async (orderNo: string): Promise<boolean> => {
 ### pages 层：支付 UI
 
 ```ts
-// pages/payment/payment.ts
+// pages/payment/index.ts
 import { pay } from '@/services/payment';
 
 Page({

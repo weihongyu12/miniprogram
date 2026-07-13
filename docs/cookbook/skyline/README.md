@@ -11,7 +11,7 @@ Skyline 工作原理、渲染差异与迁移指南见 [Skyline](../../reference/
 页面配置中指定渲染引擎：
 
 ```json
-// pages/scroll/scroll.json
+// pages/scroll/index.json
 {
   "renderer": "skyline",
   "componentFramework": "glass-easel"
@@ -40,7 +40,7 @@ Skyline 工作原理、渲染差异与迁移指南见 [Skyline](../../reference/
 通过 `scroll-view` 的滚动位置驱动元素缩放，全程在 UI 线程执行，不受 JS 阻塞：
 
 ```xml
-<!-- pages/scroll/scroll.wxml -->
+<!-- pages/scroll/index.wxml -->
 <scroll-view scroll-y id="scroller" style="height: 100vh;">
   <view class="header" style="transform: scale({{scale}});">
     <text>滚动时缩放</text>
@@ -50,7 +50,7 @@ Skyline 工作原理、渲染差异与迁移指南见 [Skyline](../../reference/
 ```
 
 ```ts
-// pages/scroll/scroll.ts
+// pages/scroll/index.ts
 Page({
   data: {
     scale: 1,
@@ -83,7 +83,7 @@ worklet 函数体必须以 `'worklet';` 开头声明，且不能闭包捕获外�
 Skyline 下样式支持更严格，`*` 通配符不支持，需显式声明类名：
 
 ```scss
-/* pages/scroll/scroll.wxss */
+/* pages/scroll/index.wxss */
 .header {
   display: flex;
   align-items: center;

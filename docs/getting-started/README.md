@@ -215,7 +215,7 @@ export const login = async () => {
 `pages` 只负责 UI 渲染、用户交互和调用 `services` 暴露的业务流程。**业务相关的 `wx.*` 调用应委托给 services**；UI 相关的 `wx.*`（跳转、Toast、Loading）可直接使用。
 
 ```ts
-// pages/login/login.ts
+// pages/login/index.ts
 import { login } from '@/services/auth/login';
 
 Page({
@@ -225,7 +225,7 @@ Page({
     this.setData({ loading: true });
     try {
       await login();
-      wx.redirectTo({ url: '/pages/home/home' });   // UI 类 wx API，可直接使用
+      wx.redirectTo({ url: '/pages/home/index' });   // UI 类 wx API，可直接使用
     } catch (error) {
       wx.showToast({ title: '登录失败', icon: 'error' });
     } finally {

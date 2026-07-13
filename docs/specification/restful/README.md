@@ -114,7 +114,7 @@ export const handleHttpError = (statusCode: number, data: any): void => {
       // Token 失效，清除凭证并跳转登录
       tokenManager.clear();
       wx.showToast({ title: '登录已过期，请重新登录', icon: 'none' });
-      setTimeout(() => wx.reLaunch({ url: '/pages/login/login' }), 1500);
+      setTimeout(() => wx.reLaunch({ url: '/pages/login/index' }), 1500);
       break;
     case 403:
       wx.showToast({ title: '无权访问该资源', icon: 'none' });

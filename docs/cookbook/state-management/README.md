@@ -93,7 +93,7 @@ Component({
 Page 构造器不能用 behavior，必须用 `createStoreBindings` 手工绑定，并在 `onUnload` 中清理：
 
 ```ts
-// pages/profile/profile.ts
+// pages/profile/index.ts
 import { createStoreBindings } from 'mobx-miniprogram-bindings';
 import { userStore } from '@/services/store/user';
 
