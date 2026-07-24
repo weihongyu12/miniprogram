@@ -103,6 +103,11 @@ const config: Config = {
           position: 'right',
         },
         {
+          href: 'https://weihongyu12.github.io/node/',
+          label: 'Node.js版',
+          position: 'right',
+        },
+        {
           href: 'https://github.com/weihongyu12/miniprogram',
           label: 'GitHub',
           position: 'right',
@@ -150,12 +155,20 @@ const config: Config = {
           title: 'More',
           items: [
             {
-              label: 'Blog',
-              href: 'https://weihongyu.com/',
+              label: 'Web版',
+              href: 'https://weihongyu12.github.io/web/',
+            },
+            {
+              label: 'Node.js版',
+              href: 'https://weihongyu12.github.io/node/',
             },
             {
               label: 'GitHub',
               href: 'https://github.com/weihongyu12/miniprogram',
+            },
+            {
+              label: 'Blog',
+              href: 'https://weihongyu.com/',
             },
             {
               label: 'Donation 捐赠',
