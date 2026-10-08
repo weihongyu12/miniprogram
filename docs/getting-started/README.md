@@ -12,7 +12,7 @@ import TabItem from '@theme/TabItem';
 目前仅支持微信小程序，对于其他小程序平台暂时不予考虑。
 :::
 
-![前端架构](./assets/architecture.png?as-webp)
+![前端架构](./assets/wx-architecture.avif)
 
 | 特性/平台          | 微信小程序                                                                   |
 |----------------|-------------------------------------------------------------------------|
