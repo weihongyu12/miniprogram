@@ -1,45 +1,47 @@
 ---
-description: 微信小程序测试实践，使用 Jest、miniprogram-simulate、miniprogram-automator 进行单元测试、组件测试与 E2E 测试
+description: 微信小程序测试实践，基于测试奖杯（Testing Trophy）策略，使用 Jest、miniprogram-simulate、miniprogram-automator 进行静态分析、单元测试、集成测试与 E2E 测试
 ---
 
 # 测试
 
-测试是前端工程化中的重要环节，有助于提高代码质量、减少 bug 出现率，并确保应用在各种场景下都能稳定运行。
+## 测试奖杯
 
-## 测试工具栈
+测试策略采用 [Kent C. Dodds](https://kentcdodds.com/blog/static-vs-unit-vs-integration-vs-e2e-tests) 提出的**测试奖杯（Testing Trophy）**模型：
 
-| 测试环节 | 工具 | 定位说明 |
-|---------|------|---------|
-| 单元测试 | [Jest](https://jestjs.io/zh-Hans/) | 极速反馈层：纯逻辑、工具函数 |
-| 组件测试 | [miniprogram-simulate](https://github.com/wechat-miniprogram/miniprogram-simulate) | UI 交互层：组件渲染与用户行为 |
-| Mock 数据 | [Faker.js](https://fakerjs.dev/) | 数据生成层：生成随机测试数据 |
-| E2E 测试 | [miniprogram-automator](https://developers.weixin.qq.com/miniprogram/dev/devtools/auto/) | 系统验证层：真实用户场景模拟 |
+![测试奖杯](./assets/testing-trophy.avif)
 
-## 测试金字塔
+底座是静态分析，往上依次是单元测试、集成测试和 E2E，层的面积代表投入比例——集成测试占大头：
 
-```
-        /\
-       /E2E\         少量，慢，真实
-      /------\
-     /组件测试 \      中等，关注组件行为
-    /----------\
-   /  单元测试   \    大量，快，纯逻辑
-  /______________\
-```
+| 层级 | 工具 | 投入 |
+|------|------|------|
+| 静态分析 | ESLint / stylelint / `tsc --noEmit` | 全量持续运行，配置详见 [Lint](../lint/) |
+| 单元测试 | [Jest](https://jestjs.io/zh-Hans/) | 精选核心纯逻辑，不追求全覆盖 |
+| 集成测试 | [miniprogram-simulate](https://github.com/wechat-miniprogram/miniprogram-simulate) | 主体投入 |
+| E2E | [miniprogram-automator](https://developers.weixin.qq.com/miniprogram/dev/devtools/auto/) | 仅核心业务路径 |
 
-- **单元测试**：覆盖 `utils/`、`services/` 中的纯函数，性价比最高
-- **组件测试**：覆盖自定义组件的渲染、properties、事件
-- **E2E 测试**：覆盖核心业务流程（登录、支付、下单），少量但关键
+测试数据可用 [Faker.js](https://fakerjs.dev/) 生成随机数据，避免手写固定值。
 
-## 阶段一：本地开发测试流
+这套策略可以概括成两句话：
 
-### 1. 静态分析拦截
+> 编写测试。不要太多。主要写集成测试。
+> —— Guillermo Rauch
 
-在编写任何逻辑和测试之前，静态分析作为最底层的防线开始工作。通过编辑器实时校验，以及配合 ESLint / stylelint 检查拼写、语法和代码风格。
+> 测试越接近软件的实际使用方式，能带来的信心就越多。
+> —— Kent C. Dodds
 
-### 2. 纯函数单元测试
+越贴近真实用户，测试结果越可信，但执行越慢、维护越贵——E2E 信心最高也最贵，单元测试便宜但离用户远。集成测试在两者之间平衡，因此是投入重心。
 
-`utils` 和 `services` 中的纯函数应优先编写单元测试：
+## 静态分析
+
+奖杯的底座不是测试，而是静态分析。它像拼写检查：不运行程序就能拦住拼写、语法、类型和风格问题——这类低级缺陷占比不低，拦截成本却几乎为零。
+
+落到三处：编辑器实时校验（ESLint / stylelint / TypeScript 插件）、提交时 lint-staged 拦截、CI 全局扫描。
+
+小程序特有的全局变量声明、WXSS 规则等配置，详见 [Lint](../lint/)。
+
+## 单元测试
+
+不必为了覆盖率把每个函数都测一遍。值得写单元测试的是逻辑复杂、边界条件多、与 UI 无关的纯函数——金额计算、加解密、脱敏、格式化这类。与 UI 有关的交给组件测试。
 
 ```ts
 // services/crypto/mask.ts
@@ -65,47 +67,35 @@ describe('maskPhone', () => {
 });
 ```
 
-### 3. 组件测试（miniprogram-simulate）
+## 集成测试
 
-#### 是什么
+集成测试让多个模块真实协作，只在系统边界——`wx.*` API 和网络请求——处 mock。项目里有两种形态：
 
-[miniprogram-simulate](https://github.com/wechat-miniprogram/miniprogram-simulate) 是微信官方提供的小程序组件测试工具，可以在 Node 环境中**模拟小程序组件的渲染、生命周期和事件**，无需启动开发者工具即可运行测试。
+- **组件测试**：用 miniprogram-simulate 渲染组件，验证渲染输出、properties、事件
+- **services 流程测试**：mock 掉 `wx.login`、`wx.request` 等边界，验证登录这类跨模块流程
 
-#### 适合做什么 / 不适合做什么
+### 组件测试（miniprogram-simulate）
 
-**✅ 适合**
+[miniprogram-simulate](https://github.com/wechat-miniprogram/miniprogram-simulate) 是微信官方的组件测试工具，在 Node 里用 jsdom 模拟组件的渲染、生命周期和事件，不需要启动开发者工具。
 
-- 测试自定义组件的渲染输出（DOM 树、data 字段）
-- 测试组件 properties 变化后的响应
-- 测试组件方法（methods）的纯逻辑
-- 测试组件间 `triggerEvent` 的事件传递
-- CI 中跑组件级回归测试
+它擅长：
 
-**❌ 不适合**
+- 自定义组件的渲染输出（DOM 树、data 字段）
+- properties 变化后的响应
+- 组件方法与 `triggerEvent` 事件传递
+- CI 中的组件级回归
 
-- 测试 `wx.*` 平台 API 的真实行为（如真实网络请求、真实存储）
-- 测试页面跳转、tabBar 等页面级交互
-- 测试真机性能
+不擅长——这些交给 [E2E 测试](#e2e-测试miniprogram-automator)：
 
-这些场景交给 [miniprogram-automator](#阶段四e2e-自动化测试miniprogram-automator) E2E 测试。
+- `wx.*` API 的真实行为（真实网络请求、真实存储）
+- 页面跳转、tabBar 等页面级交互
+- 真机性能
 
-#### 工作原理
-
-`miniprogram-simulate` 在 Node 中用 jsdom 模拟 DOM，加载并渲染小程序组件，提供：
-
-- `simulate.load()`：加载组件，返回 componentId
-- `simulate.render()`：渲染组件，返回组件实例
-- 实例可访问 `data`、`instance`（组件 this）、`querySelector`（子节点）
-
-它**不会真的调用 `wx.*`**——`wx` 全局对象需要测试用例自己 mock（见下文「Mock wx API」部分）。
-
-#### 安装
+#### 配置
 
 ```bash
 npm install -D miniprogram-simulate jest jsdom
 ```
-
-#### Jest 配置
 
 ```js
 // jest.config.js
@@ -129,6 +119,8 @@ global.wx = {
   // 大多数组件测试不需要 wx API，按用例补充
 };
 ```
+
+工作原理：`simulate.load()` 加载组件返回 componentId，`simulate.render()` 渲染返回实例，实例上有 `data`、`instance`（组件 this）和 `querySelector`（子节点）。注意它不会真的调用 `wx.*`——依赖 `wx.showToast` 之类的用例要自己 mock。
 
 #### 基础示例
 
@@ -176,7 +168,7 @@ describe('counter 组件', () => {
 });
 ```
 
-#### 测试 properties 与 events
+#### properties 与事件
 
 被测组件：
 
@@ -231,9 +223,7 @@ describe('stepper 组件', () => {
 
 #### Mock wx API
 
-`miniprogram-simulate` 不会调用真实 `wx`。如果组件方法依赖 `wx.showToast` 等，需要在用例中 mock：
-
-```ts
+```js
 // jest.setup.js
 global.wx = {
   showToast: jest.fn(),
@@ -259,25 +249,9 @@ it('提交成功应弹 toast', () => {
 });
 ```
 
-如果被测代码通过 services 间接调用 wx（如 `services/auth/login.ts` 调用 `wx.login`），见下文「Mock wx API（services 层）」部分。
+### services 流程测试
 
-#### 组件测试常见问题
-
-**Q: 报错 `Cannot find module 'xxx'`**
-
-被测组件依赖了 npm 包但没构建。先在开发者工具或 CI 跑"构建 npm"，确保 `miniprogram_npm/` 存在。
-
-**Q: 测试中 `comp.instance.xxx` 是 undefined**
-
-`instance` 上只能访问 `methods` 中的方法，不能直接访问 data 字段（用 `comp.data.xxx`）。
-
-**Q: 子组件渲染不出来**
-
-miniprogram-simulate 默认会加载被测组件引用的子组件。如果子组件依赖 npm 包，需在 jest 配置 `moduleNameMapper`。
-
-### 4. Mock wx API（services 层）
-
-在测试 services 层时同样需要 Mock 小程序 API，避免真实调用：
+登录这类流程 = `wx.login` + http 请求 + storage 写入，跨了多个模块。测试时让模块真实协作，只 mock `wx.*` 与网络请求两处边界：
 
 ```ts
 // __tests__/services/auth/login.test.ts
@@ -321,85 +295,15 @@ describe('login', () => {
 });
 ```
 
-## 阶段二：代码提交管控流
+## E2E 测试（miniprogram-automator）
 
-通过 Husky + lint-staged 在本地提交时设置卡点：
-
-- **Lint 校验**：对暂存区代码运行 ESLint
-- **相关性测试运行**：自动运行受当前提交文件影响的单元测试（Jest 的 `--findRelatedTests`）
-- **卡点规则**：仅当上述静态分析和受影响的单测全部通过时，才允许生成 commit
-
-```json
-// package.json
-{
-  "lint-staged": {
-    "*.{js,ts}": ["eslint --fix", "jest --findRelatedTests"]
-  }
-}
-```
-
-## 阶段三：CI/CD 持续集成流水线
-
-```mermaid
-graph TD
-    A["代码推送到远程"] --> B(依赖安装 Install)
-    B --> C{"并行阶段 1：静态扫描与单测"}
-    C -->|极快| D[Lint & Type Check]
-    C -->|快| E["单元与组件测试 Jest"]
-    D --> F{"阶段 2：构建"}
-    E --> F
-    F -->|中等| G[构建 npm Build]
-    G --> H["阶段 3：上传"]
-    H --> I[流水线通过]
-
-    style E fill:#d4edda,stroke:#28a745
-    style H fill:#f3e5f5,stroke:#9c27b0
-```
-
-### 1. 并行质量门禁
-
-- **静态检查 & 类型检查**：全局运行 ESLint 及 TypeScript `tsc --noEmit`
-- **单元测试/组件测试**：执行全量的 Jest 测试套件
-- **覆盖率检查**：收集代码覆盖率，低于阈值（如 70%）流水线阻断
-
-### 2. 构建打包
-
-执行 `npm run build:npm` 构建 `miniprogram_npm/`。
-
-### 3. 上传
-
-通过 `miniprogram-ci` 上传到微信服务器，详见 [CI/CD](../ci/).
-
-## 阶段四：E2E 自动化测试（miniprogram-automator）
-
-### 是什么
-
-[miniprogram-automator](https://developers.weixin.qq.com/miniprogram/dev/devtools/auto/) 是微信官方的小程序端到端（E2E）自动化测试工具。它通过外部控制**微信开发者工具**，模拟用户操作（点击、输入、滚动），验证完整业务链路。
-
-### 与 miniprogram-simulate 的区别
-
-| 对比项 | miniprogram-simulate | miniprogram-automator |
-|--------|---------------------|------------------------|
-| 运行环境 | Node + jsdom | 微信开发者工具 |
-| 测试粒度 | 组件 / 函数 | 完整页面 / 完整业务流程 |
-| 是否真实渲染 | ❌ 模拟 | ✅ 真实渲染 |
-| 是否调用 wx API | ❌ 需 mock | ✅ 真实调用 |
-| 速度 | 快（毫秒级） | 慢（秒级，需启动工具） |
-| 适合场景 | 组件单元测试 | 登录流程、支付流程等端到端验证 |
-
-定位互补：simulate 跑大量组件用例，automator 跑少量关键路径用例。
+[miniprogram-automator](https://developers.weixin.qq.com/miniprogram/dev/devtools/auto/) 是微信官方的 E2E 工具，从外部控制**微信开发者工具**，模拟点击、输入、滚动等真实用户操作，验证完整业务链路。它位于奖杯顶部：信心最高（100% 真实环境），成本也最高（秒级执行、要启动工具），所以只留给核心业务路径。
 
 ### 环境要求
 
 - 已安装微信开发者工具
 - 开发者工具 → 设置 → 安全设置 → 开启"服务端口"
 - 操作系统：macOS / Windows（**Linux 不支持**，因开发者工具不支持）
-
-### 安装
-
-```bash
-npm install -D miniprogram-automator
-```
 
 ### 基础示例
 
@@ -453,9 +357,9 @@ describe('登录流程 E2E', () => {
 | `page.waitFor(ms)` / `page.waitFor(condition)` | 等待时间 / 条件 |
 | `miniProgram.close()` | 关闭连接 |
 
-### Mock 网络（关键能力）
+### Mock 网络
 
-E2E 测试通常会 mock `wx.request`，避免依赖真实后端：
+E2E 通常 mock 掉 `wx.request`，避免依赖真实后端：
 
 ```ts
 beforeAll(async () => {
@@ -475,9 +379,9 @@ beforeAll(async () => {
 });
 ```
 
-这样在 E2E 中跑完整登录 → 支付链路，但**不依赖真实后端**，保证测试稳定。
+这样可以在 E2E 里跑完整的登录 → 支付链路，而不依赖真实后端，保证测试稳定。
 
-### 真实场景示例：完整下单流程
+### 完整下单流程示例
 
 ```ts
 describe('下单流程 E2E', () => {
@@ -531,71 +435,107 @@ describe('下单流程 E2E', () => {
 });
 ```
 
-### CI 集成
+### 适用场景与限制
 
-:::warning
-E2E 测试依赖微信开发者工具，CI 机器需预装。目前仅 macOS / Windows 支持。
-:::
+E2E 适合保护核心路径（登录、下单、支付）的回归，替代重复的人工冒烟；频繁改动但风险高的页面也值得覆盖。不适合承载大量细节断言——那是组件测试的事，又快又稳；CI 时长紧张时也不宜全量铺开。
 
-GitHub Actions 示例：
+限制需要心里有数：
 
-```yaml
-# .github/workflows/e2e.yml
-name: E2E
-on: [push]
-jobs:
-  e2e:
-    runs-on: macos-latest    # 必须用 macos 或 windows
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-
-      - name: 安装微信开发者工具
-        run: |
-          brew install --cask wechatwebdevtools
-          # 启动并打开服务端口
-          /Applications/wechatwebdevtools.app/Contents/MacOS/cli open --project $PWD
-
-      - name: 等待工具启动
-        run: sleep 30
-
-      - name: 跑 E2E
-        env:
-          WX_CLI_PATH: /Applications/wechatwebdevtools.app/Contents/MacOS/cli
-          WX_PROJECT_PATH: ${{ github.workspace }}
-        run: npm run test:e2e
-```
-
-### 何时用 / 何时不用
-
-**✅ 推荐**
-
-- 核心业务路径（登录、下单、支付）的回归保护
-- 频繁改动但风险高的页面
-- 替代重复的人工冒烟测试
-
-**❌ 不推荐**
-
-- 大量细节断言（用 miniprogram-simulate 跑组件级更高效）
-- CI 时长紧张时全量 E2E（耗时大）
-- Linux CI 机器（不支持）
-
-### 限制
-
-- 启动慢（每次启动开发者工具 + 项目编译需数秒~数十秒）
-- 用例间状态隔离需自行管理（每次测试前 `reLaunch` 重置）
+- 启动慢，每次启动开发者工具加编译要数秒到数十秒
+- 用例间状态隔离要自己做（每次测试前 `reLaunch` 重置）
 - 不支持 Linux
 - 开发者工具版本与 SDK 兼容性偶有抖动，需固定版本
 
+## 提交管控
+
+本地提交由 Husky + lint-staged 卡点：暂存区代码过 ESLint 检查，通过后才允许生成 commit。
+
+```js
+// lint-staged.config.js
+module.exports = {
+  '*.{js,ts}': ['eslint --fix'],
+};
+```
+
+## CI 集成
+
+```mermaid
+graph TD
+    A[代码推送] --> B[install]
+    B --> C[Lint & Type Check]
+    B --> D[Jest 测试]
+    C --> E[构建 npm]
+    D --> E
+    E --> F[上传 miniprogram-ci]
+    F --> G[流水线通过]
+```
+
+完整流水线定义见 [CI/CD](../ci/)，本文档只展开与测试相关的两个 job。
+
+### 单元测试 + 集成测试
+
+Jest 一次性跑完单元测试、组件测试和 services 流程测试，并上报覆盖率：
+
+```yaml
+# .gitlab-ci.yml（测试部分）
+test:
+  stage: test
+  image: node:lts
+  needs: [install]
+  script:
+    - npm run test
+  coverage: '/Lines\s*:\s*(\d+\.\d+)%/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/cobertura-coverage.xml
+```
+
+### E2E 测试
+
+:::warning
+E2E 依赖微信开发者工具，Runner 必须是 macOS / Windows 自托管机器；GitLab 共享 Runner 仅支持 Linux，跑不了 E2E。
+:::
+
+E2E 成本高，在 MR 流水线中手动触发：
+
+```yaml
+# .gitlab-ci.yml（E2E 部分）
+e2e:
+  stage: test
+  tags:
+    - macos               # 自托管 macOS / Windows Runner
+  needs: [install]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: manual        # 手动触发
+  variables:
+    WX_CLI_PATH: /Applications/wechatwebdevtools.app/Contents/MacOS/cli
+    WX_PROJECT_PATH: $CI_PROJECT_DIR
+  script:
+    - brew install --cask wechatwebdevtools
+    # 启动开发者工具并打开服务端口
+    - /Applications/wechatwebdevtools.app/Contents/MacOS/cli open --project $CI_PROJECT_DIR
+    - sleep 30            # 等待工具启动
+    - npm run test:e2e
+```
+
+### 质量门禁
+
+ESLint、`tsc --noEmit` 与 Jest 并行执行，覆盖率低于阈值（如 70%）时流水线阻断。
+
 ## 策略与权衡
 
-- **避免过度测试**：100% 的代码覆盖率不是目标。如果项目是重度 UI 展现且业务逻辑简单，应将资源倾斜到 E2E 阶段
-- **关注 CI 耗时**：如果 CI 流水线运行时间过长，应审视是否将过多本应由组件测试承担的断言逻辑，写到了笨重的 E2E 中
-- **优先测试纯函数**：`utils`、`services` 中的业务逻辑应优先覆盖单元测试，性价比最高
+100% 覆盖率不是目标。覆盖率用于发现长期没有测试的高风险区域，为凑数写的断言没有价值。
 
-## 测试覆盖率配置
+过度隔离的单元测试和实现细节耦合，重构时要跟着改，慢慢就没人维护了。这正是把重心放在集成测试上的原因——渲染、交互、事件都按真实使用的方式验证，重构内部实现时不容易失效。
+
+流水线时间过长时，先检查是否把本该由组件测试承担的断言写进了 E2E。项目重度 UI、业务逻辑简单的话，把资源向 E2E 倾斜也是合理选择。
+
+## 覆盖率配置
+
+阈值是质量下限，不是冲刺目标；未达标时优先补集成测试。
 
 ```js
 // jest.config.js
@@ -621,6 +561,8 @@ module.exports = {
 
 ## 参考资料
 
+- [测试策略（web.dev）](https://web.dev/articles/ta-strategies?hl=zh-cn)
+- [Static vs Unit vs Integration vs E2E Tests — Kent C. Dodds](https://kentcdodds.com/blog/static-vs-unit-vs-integration-vs-e2e-tests)
 - [miniprogram-simulate](https://github.com/wechat-miniprogram/miniprogram-simulate)
 - [miniprogram-automator](https://developers.weixin.qq.com/miniprogram/dev/devtools/auto/)
 - [Jest](https://jestjs.io/zh-Hans/)
