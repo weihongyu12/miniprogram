@@ -20,7 +20,7 @@ description: 微信、支付宝、抖音、快手、百度、鸿蒙等主流小�
 | [微信小程序](https://developers.weixin.qq.com/miniprogram/dev/framework/) | WXML | WXSS / Sass / Less | JS / TS | WXS | Skyline | 双线程架构的行业事实标准，官方工具链最完善 |
 | [企业微信小程序](https://developer.work.weixin.qq.com/document/path/92455) | WXML | WXSS / Sass / Less | JS / TS | WXS | | 与微信完全同源，独占 `wx.qy.*` 企业级 API，一套代码连通企业内部与微信客户 |
 | [钉钉智能小程序](https://open.dingtalk.com/document/development/mini-app-overview-of-mini-program-framework) | AXML | ACSS | JS / TS | SJS | | 阿里系底层，深度对接 OA/ERP 能力，强依赖 Ant Design 组件体系 |
-| [支付宝小程序](https://opendocs.alipay.com/mini/developer) | AXML | ACSS / Less | JS / TS | SJS | | 阿里系底层，金融级 API（支付链路、实人认证、芝麻信用）支持深度领先 |
+| [支付宝小程序](https://opendocs.alipay.com/mini/developer) | AXML | ACSS / Less | JS / TS | SJS | Native | 阿里系底层，金融级 API（支付链路、实人认证、芝麻信用）支持深度领先 |
 | [京东小程序](https://mp.jd.com/) | JXML | JXSS | JS | JDS | | 对齐微信规范，独占商品卡片、SKU 选择器等电商组件 |
 | [抖音小程序](https://developer.open-douyin.com/) | TTML | TTSS | JS / TS | SJS | Lynx | 侧重短视频/直播间挂载态交互，需处理半屏弹窗与退后台状态保持 |
 | [快手小程序](https://open.kuaishou.com/) | KSML | CSS | JS | KS | | 对齐微信规范，侧重直播间生命周期适配与下沉市场兼容 |
